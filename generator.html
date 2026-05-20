@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>SVG FIU - QR URL Generator</title>
+    <meta charset="UTF-8">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #1a472a;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+        }
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            font-size: 16px;
+        }
+        button {
+            background: #1a472a;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #0e2e1a;
+        }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f0f0f0;
+            border-radius: 5px;
+            word-break: break-all;
+        }
+        .qr-link {
+            margin-top: 10px;
+        }
+        .qr-link a {
+            color: #1a472a;
+            text-decoration: none;
+        }
+        .settings {
+            margin-top: 30px;
+            padding: 15px;
+            background: #e8f5e9;
+            border-radius: 5px;
+        }
+        .note {
+            font-size: 12px;
+            color: #666;
+            margin-top: 10px;
+        }
+        .copy-btn {
+            background: #2c3e50;
+            margin-top: 5px;
+        }
+        .success {
+            background: #4caf50;
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>SVG FIU - QR URL Generator</h2>
+        <p>Enter the entity name and get your verification URL instantly.</p>
+        
+        <label><strong>Entity Name:</strong></label>
+        <input type="text" id="entityName" placeholder="e.g., ABC Bank, John Smith, Sunrise Hospital">
+        
+        <label><strong>Document ID (optional):</strong></label>
+        <input type="text" id="docId" placeholder="e.g., BANK-001, leave blank for auto-gen">
+        
+        <button id="generateBtn">Generate Verification URL</button>
+        
+        <div id="result" style="display:none;">
+            <div id="copyMsg" class="success" style="display:none;">✓ Copied to clipboard!</div>
+            <div class="result">
+                <strong>Verification URL:</strong><br>
+                <span id="generatedUrl"></span>
+            </div>
+            <button id="copyUrlBtn" class="copy-btn">📋 Copy URL</button>
+            <div class="qr-link">
+                <a id="qrGeneratorLink" href="#" target="_blank">🔲 Generate QR Code →</a>
+            </div>
+        </div>
+        
+        <div class="settings">
+            <strong>⚙️ Base URL Settings</strong>
+            <p style="font-size: 13px; margin: 5px 0;">Your base verification URL:</p>
+            <input type="text" id="baseUrl" style="font-size: 13px;">
+            <button id="saveBaseUrlBtn" style="background: #607d8b;">Save Base URL</button>
+            <div class="note">
+                💡 The base URL is stored in your browser. If your GitHub URL ever changes, update it here once and all future links will use the new URL.
+            </div>
+        </div>
+        
+        <div class="note">
+            <strong>Quick guide:</strong><br>
+            1. Enter entity name (spaces are fine, no need to type %20)<br>
+            2. Click Generate<br>
+            3. Copy the URL or click "Generate QR Code"<br>
+            4. Done!
+        </div>
+    </div>
+
+    <script>
+        // Default base URL
+        const DEFAULT_URL = "https://SVGFIU.github.io/svgfiu-verify/verify.html";
+        
+        // Load saved base URL from localStorage
+        let currentBaseUrl = localStorage.getItem('svgfiu_base_url') || DEFAULT_URL;
+        
+        // Set the input field value
+        document.getElementById('baseUrl').value = currentBaseUrl;
+        
+        // Generate the verification URL
+        function generateUrl() {
+            let entityName = document.getElementById('entityName').value.trim();
+            let docId = document.getElementById('docId').value.trim();
+            
+            if (!entityName) {
+                alert('Please enter an entity name');
+                return false;
+            }
+            
+            // Encode the entity name for URL (handles spaces, special characters automatically)
+            let encodedEntity = encodeURIComponent(entityName);
+            let url = currentBaseUrl + '?entity=' + encodedEntity;
+            
+            if (docId) {
+                let encodedDocId = encodeURIComponent(docId);
+                url += '&id=' + encodedDocId;
+            }
+            
+            document.getElementById('generatedUrl').textContent = url;
+            document.getElementById('qrGeneratorLink').href = 'https://www.qrcode-monkey.com/#' + url;
+            document.getElementById('result').style.display = 'block';
+            
+            return url;
+        }
+        
+        // Copy to clipboard
+        async function copyToClipboard() {
+            const urlText = document.getElementById('generatedUrl').textContent;
+            try {
+                await navigator.clipboard.writeText(urlText);
+                const msgDiv = document.getElementById('copyMsg');
+                msgDiv.style.display = 'block';
+                setTimeout(() => {
+                    msgDiv.style.display = 'none';
+                }, 2000);
+            } catch (err) {
+                alert('Press Ctrl+C to copy the URL');
+            }
+        }
+        
+        // Save base URL
+        function saveBaseUrl() {
+            let newBaseUrl = document.getElementById('baseUrl').value.trim();
+            if (!newBaseUrl) {
+                alert('Please enter a valid URL');
+                return;
+            }
+            currentBaseUrl = newBaseUrl;
+            localStorage.setItem('svgfiu_base_url', currentBaseUrl);
+            alert('Base URL saved! Future links will use: ' + currentBaseUrl);
+            
+            // Clear result if showing
+            document.getElementById('result').style.display = 'none';
+            document.getElementById('entityName').value = '';
+        }
+        
+        // Event listeners
+        document.getElementById('generateBtn').addEventListener('click', generateUrl);
+        document.getElementById('copyUrlBtn').addEventListener('click', copyToClipboard);
+        document.getElementById('saveBaseUrlBtn').addEventListener('click', saveBaseUrl);
+        
+        // Allow Enter key to generate
+        document.getElementById('entityName').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                generateUrl();
+            }
+        });
+        
+        // Pre-fill example on first load
+        if (!localStorage.getItem('svgfiu_base_url')) {
+            // First time user - show example
+            document.getElementById('entityName').placeholder = "e.g., ABC Bank (try it!)";
+        }
+    </script>
+</body>
+</html>
